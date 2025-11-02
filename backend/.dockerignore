@@ -97,4 +97,4 @@ test_auth
 .editorconfig
 .prettierrc
 .eslintrc
-tsconfig.json
+# tsconfig.json - NECESSÁRIO para ts-node
