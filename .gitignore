@@ -90,13 +90,45 @@ desktop.ini
 docker-data/
 
 # ==============================================
-# BACKUP
+# BACKUP E BANCO DE DADOS (NADA DE DB NO GIT!)
 # ==============================================
 *.backup
 *.bak
 *.old
+*.sql
+*.sql.gz
+*.dump
+backup_*.sql
+backups/
+*_backup_*
+restore_*.sql
+
+# Ignorar TODAS as migrations e scripts SQL
+backend/migrations/*.sql
+backend/migrations/**/*.sql
+migrations/*.sql
+migrations/**/*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.mdb
 
 # ==============================================
-# AUTENTICAÇÃO
+# DOCKER COMPOSE TEMPORÁRIOS
+# ==============================================
+docker-compose-simple.yml
+docker-compose-prod.yml
+docker-compose.override.yml
+
+# ==============================================
+# SESSÕES E CACHE DO WHATSAPP
 # ==============================================
 backend/auth_*/
+backend/whatsapp-session/
+*.session
+
+# ==============================================
+# ARQUIVOS DE CONFIGURAÇÃO SENSÍVEIS
+# ==============================================
+.env.production
+backend/.env.production
