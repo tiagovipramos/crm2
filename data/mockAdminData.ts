@@ -951,6 +951,7 @@ export const mockChatsVendedores: ChatVendedor[] = [
     vendedorId: 11,
     vendedorNome: 'Carlos Silva',
     whatsappConectado: true,
+    sistemaOnline: true,
     chatsAtivos: 23,
     distribuicao: [
       { etapa: 'Novo', quantidade: 8, percentual: 34.8 },
@@ -965,6 +966,7 @@ export const mockChatsVendedores: ChatVendedor[] = [
     vendedorId: 17,
     vendedorNome: 'Felipe Castro',
     whatsappConectado: true,
+    sistemaOnline: true,
     chatsAtivos: 22,
     distribuicao: [
       { etapa: 'Novo', quantidade: 6, percentual: 27.3 },
@@ -979,6 +981,7 @@ export const mockChatsVendedores: ChatVendedor[] = [
     vendedorId: 21,
     vendedorNome: 'Rafael Gomes',
     whatsappConectado: true,
+    sistemaOnline: true,
     chatsAtivos: 21,
     distribuicao: [
       { etapa: 'Novo', quantidade: 7, percentual: 33.3 },
@@ -993,6 +996,7 @@ export const mockChatsVendedores: ChatVendedor[] = [
     vendedorId: 14,
     vendedorNome: 'Patrícia Mendes',
     whatsappConectado: true,
+    sistemaOnline: true,
     chatsAtivos: 20,
     distribuicao: [
       { etapa: 'Novo', quantidade: 5, percentual: 25.0 },
