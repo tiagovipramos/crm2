@@ -532,34 +532,46 @@ export const criarIndicacao = async (req: IndicadorAuthRequest, res: Response) =
 
     // Se houver consultores online, criar o lead automaticamente
     if (consultorId) {
+      try {
+        console.log('📋 Criando lead no CRM...');
+        
+        // ✅ Criar lead no CRM automaticamente no kanban "Indicação"
+        const insertLeadResult = await query(
+          `INSERT INTO leads (
+            nome, telefone, origem, status, mensagens_nao_lidas, 
+            consultor_id, indicador_id, indicacao_id, data_criacao, data_atualizacao
+          ) VALUES (?, ?, 'Indicação', 'indicacao', 0, ?, ?, ?, NOW(), NOW())`,
+          [nomeIndicado, validacao.telefone, consultorId, indicadorId, indicacao.id]
+        );
 
-      // Criar lead no CRM automaticamente no kanban "Indicação"
-      await query(
-        `INSERT INTO leads (
-          nome, telefone, origem, status, mensagens_nao_lidas, 
-          consultor_id, indicador_id, indicacao_id, data_criacao, data_atualizacao
-        ) VALUES (?, ?, 'Indicação', 'indicacao', 0, ?, ?, ?, NOW(), NOW())`,
-        [nomeIndicado, validacao.telefone, consultorId, indicadorId, indicacao.id]
-      );
+        console.log('✅ Lead criado no banco. Resultado:', insertLeadResult);
 
-      // Atualizar indicação com lead_id e status
-      const leadResult = await query(
-        'SELECT id FROM leads WHERE indicacao_id = ? ORDER BY data_criacao DESC LIMIT 1',
-        [indicacao.id]
-      );
+        // ✅ Buscar o lead recém-criado com validação
+        const leadResult = await query(
+          'SELECT id FROM leads WHERE indicacao_id = ? ORDER BY data_criacao DESC LIMIT 1',
+          [indicacao.id]
+        );
 
-      if (leadResult.rows.length > 0) {
+        if (leadResult.rows.length === 0) {
+          throw new Error('Lead não foi encontrado após criação. Possível falha no INSERT.');
+        }
+
+        const leadId = leadResult.rows[0].id;
+        console.log('✅ Lead encontrado com ID:', leadId);
+
+        // ✅ Atualizar indicação com lead_id e status
         await query(
           'UPDATE indicacoes SET lead_id = ?, status = ? WHERE id = ?',
-          [leadResult.rows[0].id, 'enviado_crm', indicacao.id]
+          [leadId, 'enviado_crm', indicacao.id]
         );
+        console.log('✅ Indicação atualizada com lead_id');
         
         // 🔥 Emitir evento Socket.IO para o consultor sobre o novo lead
         const io = (global as any).io;
         if (io) {
           console.log(`📡 Emitindo evento 'novo_lead' para consultor ${consultorId}`);
           io.to(`consultor_${consultorId}`).emit('novo_lead', {
-            leadId: leadResult.rows[0].id,
+            leadId: leadId,
             nome: nomeIndicado,
             telefone: validacao.telefone,
             origem: 'Indicação',
@@ -576,6 +588,8 @@ export const criarIndicacao = async (req: IndicadorAuthRequest, res: Response) =
         // 📱 Enviar mensagem automática de boas-vindas via WhatsApp
         if (statusConexao === 'online') {
           try {
+            console.log('📤 Preparando mensagem de boas-vindas...');
+            
             // Buscar nome do indicador
             const indicadorResult = await query(
               'SELECT nome FROM indicadores WHERE id = ?',
@@ -587,14 +601,14 @@ export const criarIndicacao = async (req: IndicadorAuthRequest, res: Response) =
             const mensagemBoasVindas = `Olá, tudo bem? Meu nome é ${consultorNome} e recebi seu contato através do ${indicadorNome}. Seria para fazer a cotação do seu seguro.`;
 
             console.log(`📤 Enviando mensagem automática de boas-vindas para ${validacao.telefone}...`);
-            console.log(`🆔 Lead ID para associar a mensagem: ${leadResult.rows[0].id}`);
+            console.log(`🆔 Lead ID para associar a mensagem: ${leadId}`);
             
             // ✅ Passar o lead_id específico para garantir que a mensagem seja associada corretamente
             await whatsappService.enviarMensagem(
               consultorId,
               validacao.telefone,
               mensagemBoasVindas,
-              leadResult.rows[0].id // ✅ Passar lead_id específico
+              leadId // ✅ Usar leadId já validado
             );
 
             console.log('✅ Mensagem de boas-vindas enviada com sucesso!');
@@ -606,17 +620,49 @@ export const criarIndicacao = async (req: IndicadorAuthRequest, res: Response) =
               stack: (whatsappError as Error).stack
             });
             // Não bloquear a criação da indicação se o WhatsApp falhar
-            mensagem = 'Indicação criada com sucesso! O lead foi enviado para o CRM.';
+            mensagem = 'Indicação criada com sucesso! O lead foi enviado para o CRM (mensagem de boas-vindas não pôde ser enviada).';
           }
         } else {
           console.log('⚠️ WhatsApp do consultor não está conectado. Mensagem de boas-vindas não será enviada.');
-          mensagem = 'Indicação criada com sucesso! O lead foi enviado para o CRM.';
+          mensagem = 'Indicação criada com sucesso! O lead foi enviado para o CRM (sem mensagem de boas-vindas - WhatsApp desconectado).';
         }
-      }
 
-      leadCriado = true;
-      if (!mensagem.includes('boas-vindas')) {
-        mensagem = 'Indicação criada com sucesso! O lead foi enviado para o CRM.';
+        leadCriado = true;
+      } catch (leadError) {
+        // ❌ Erro ao criar lead - registrar detalhes e retornar erro específico
+        console.error('❌ ERRO CRÍTICO ao criar lead no CRM:', leadError);
+        console.error('📋 Detalhes completos:', {
+          message: (leadError as Error).message,
+          stack: (leadError as Error).stack,
+          nomeIndicado,
+          telefone: validacao.telefone,
+          consultorId,
+          indicadorId,
+          indicacaoId: indicacao.id
+        });
+
+        // Manter indicação como pendente já que o lead não foi criado
+        await query(
+          'UPDATE indicacoes SET status = ? WHERE id = ?',
+          ['pendente', indicacao.id]
+        );
+
+        leadCriado = false;
+        mensagem = 'Indicação criada mas houve erro ao criar lead no CRM. Por favor, contate o suporte.';
+        
+        // Retornar erro detalhado
+        return res.status(500).json({
+          error: 'Erro ao criar lead no CRM',
+          message: mensagem,
+          details: (leadError as Error).message,
+          indicacao: {
+            id: indicacao.id,
+            nomeIndicado: indicacao.nome_indicado,
+            telefoneIndicado: indicacao.telefone_indicado,
+            status: 'pendente',
+            dataIndicacao: indicacao.data_indicacao
+          }
+        });
       }
     } else {
       // Se não houver consultores, manter indicação como pendente
