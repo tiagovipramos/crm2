@@ -7,5 +7,5 @@
     "auth_*/**",
     "*.log"
   ],
-  "exec": "ts-node --transpile-only src/server.ts"
+  "exec": "ts-node --transpile-only"
 }
