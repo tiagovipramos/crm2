@@ -7,6 +7,7 @@ import path from 'path';
 import { pool } from './config/database';
 import { whatsappService } from './services/whatsappService';
 import { cleanupService } from './services/cleanupService';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 // Rotas
 import authRoutes from './routes/auth';
@@ -180,10 +181,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Rota 404
-app.use((req, res) => {
-  res.status(404).json({ error: 'Rota não encontrada' });
-});
+// Middleware de rota não encontrada (404) - deve vir antes do errorHandler
+app.use(notFoundHandler);
+
+// Middleware de tratamento de erros global - deve ser o último middleware
+app.use(errorHandler);
 
 // Iniciar servidor
 const start = async () => {

@@ -4,21 +4,26 @@ import jwt from 'jsonwebtoken';
 import { query } from '../config/db-helper';
 import { whatsappService } from '../services/whatsappService';
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response, next: any) => {
   try {
     const { email, senha } = req.body;
 
+    // Validação de entrada
     if (!email || !senha) {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+    }
+
+    if (typeof email !== 'string' || typeof senha !== 'string') {
+      return res.status(400).json({ error: 'Email e senha devem ser strings' });
     }
 
     // Buscar consultor no banco
     const result = await query(
       'SELECT id, nome, email, senha, telefone, avatar, sessao_whatsapp, status_conexao, numero_whatsapp, ativo FROM consultores WHERE email = ?',
-      [email]
+      [email.trim().toLowerCase()]
     );
 
-    if (result.rows.length === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
@@ -27,6 +32,12 @@ export const login = async (req: Request, res: Response) => {
     // Verificar se o usuário está ativo
     if (consultor.ativo === false || consultor.ativo === 0) {
       return res.status(403).json({ error: 'Usuário Bloqueado' });
+    }
+
+    // Verificar se a senha está definida
+    if (!consultor.senha) {
+      console.error('❌ Senha não definida para o usuário:', email);
+      return res.status(500).json({ error: 'Erro na autenticação. Contate o administrador.' });
     }
 
     // Verificar senha
@@ -105,21 +116,25 @@ export const login = async (req: Request, res: Response) => {
       consultor: consultorResponse
     });
   } catch (error) {
-    console.error('Erro no login:', error);
-    res.status(500).json({ error: 'Erro ao fazer login' });
+    console.error('❌ Erro no login:', error);
+    next(error);
   }
 };
 
-export const getMe = async (req: Request, res: Response) => {
+export const getMe = async (req: Request, res: Response, next: any) => {
   try {
     const consultorId = req.user?.id;
+
+    if (!consultorId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
 
     const result = await query(
       'SELECT id, nome, email, telefone, avatar, sessao_whatsapp, status_conexao, numero_whatsapp, data_criacao, ultimo_acesso FROM consultores WHERE id = ?',
       [consultorId]
     );
 
-    if (result.rows.length === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return res.status(404).json({ error: 'Consultor não encontrado' });
     }
 
@@ -141,7 +156,7 @@ export const getMe = async (req: Request, res: Response) => {
 
     res.json({ consultor: consultorResponse });
   } catch (error) {
-    console.error('Erro ao buscar consultor:', error);
-    res.status(500).json({ error: 'Erro ao buscar consultor' });
+    console.error('❌ Erro ao buscar consultor:', error);
+    next(error);
   }
 };

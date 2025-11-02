@@ -51,9 +51,13 @@ const toCamelCase = (obj: any) => {
   return converted;
 };
 
-export const getLeads = async (req: Request, res: Response) => {
+export const getLeads = async (req: Request, res: Response, next: any) => {
   try {
     const consultorId = req.user?.id;
+
+    if (!consultorId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
 
     console.log('📥 Carregando leads do consultor:', consultorId);
 
@@ -64,42 +68,58 @@ export const getLeads = async (req: Request, res: Response) => {
       [consultorId]
     );
 
+    if (!result.rows) {
+      return res.json([]);
+    }
+
     console.log('📊 Total de leads encontrados:', result.rows.length);
-    console.log('📋 Status dos leads:', result.rows.map((l: any) => ({ id: l.id, nome: l.nome, status: l.status })));
 
     // Converter para camelCase
     const leads = result.rows.map(toCamelCase);
     res.json(leads);
   } catch (error) {
-    console.error('Erro ao buscar leads:', error);
-    res.status(500).json({ error: 'Erro ao buscar leads' });
+    console.error('❌ Erro ao buscar leads:', error);
+    next(error);
   }
 };
 
-export const getLead = async (req: Request, res: Response) => {
+export const getLead = async (req: Request, res: Response, next: any) => {
   try {
     const { id } = req.params;
     const consultorId = req.user?.id;
+
+    if (!consultorId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID do lead é obrigatório' });
+    }
 
     const result = await query(
       'SELECT * FROM leads WHERE id = ? AND consultor_id = ?',
       [id, consultorId]
     );
 
-    if (result.rows.length === 0) {
+    if (!result.rows || result.rows.length === 0) {
       return res.status(404).json({ error: 'Lead não encontrado' });
     }
 
     res.json(toCamelCase(result.rows[0]));
   } catch (error) {
-    console.error('Erro ao buscar lead:', error);
-    res.status(500).json({ error: 'Erro ao buscar lead' });
+    console.error('❌ Erro ao buscar lead:', error);
+    next(error);
   }
 };
 
-export const createLead = async (req: Request, res: Response) => {
+export const createLead = async (req: Request, res: Response, next: any) => {
   try {
     const consultorId = req.user?.id;
+
+    if (!consultorId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
     const {
       nome,
       telefone,
@@ -112,8 +132,17 @@ export const createLead = async (req: Request, res: Response) => {
       observacoes
     } = req.body;
 
+    // Validações
     if (!nome || !telefone) {
       return res.status(400).json({ error: 'Nome e telefone são obrigatórios' });
+    }
+
+    if (typeof nome !== 'string' || typeof telefone !== 'string') {
+      return res.status(400).json({ error: 'Nome e telefone devem ser strings' });
+    }
+
+    if (nome.trim().length < 2) {
+      return res.status(400).json({ error: 'Nome deve ter pelo menos 2 caracteres' });
     }
 
     // Normalizar telefone para WhatsApp (remove o 9º dígito)
@@ -146,27 +175,43 @@ export const createLead = async (req: Request, res: Response) => {
 
     // Buscar lead criado para retornar com todos os campos
     const newLeadId = result.insertId;
+    
+    if (!newLeadId) {
+      throw new Error('Falha ao criar lead - ID não retornado');
+    }
+    
     const leadResult = await query('SELECT * FROM leads WHERE id = ?', [newLeadId]);
+    
+    if (!leadResult.rows || leadResult.rows.length === 0) {
+      throw new Error('Falha ao buscar lead criado');
+    }
     
     res.status(201).json(toCamelCase(leadResult.rows[0]));
   } catch (error) {
-    console.error('Erro ao criar lead:', error);
-    res.status(500).json({ error: 'Erro ao criar lead' });
+    console.error('❌ Erro ao criar lead:', error);
+    next(error);
   }
 };
 
-export const updateLead = async (req: Request, res: Response) => {
+export const updateLead = async (req: Request, res: Response, next: any) => {
   try {
     const { id } = req.params;
     const consultorId = req.user?.id;
     const updates = req.body;
 
-    console.log('');
-    console.log('================================================');
+    if (!consultorId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID do lead é obrigatório' });
+    }
+
+    if (!updates || Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Nenhum dado para atualizar' });
+    }
+
     console.log('🔄 ATUALIZANDO LEAD:', id);
-    console.log('================================================');
-    console.log('📝 Dados recebidos do frontend:', JSON.stringify(updates, null, 2));
-    console.log('📊 Campos recebidos:', Object.keys(updates));
 
     // Verificar se o lead pertence ao consultor
     const checkResult = await query(
@@ -174,7 +219,7 @@ export const updateLead = async (req: Request, res: Response) => {
       [id, consultorId]
     );
 
-    if (checkResult.rows.length === 0) {
+    if (!checkResult.rows || checkResult.rows.length === 0) {
       console.log('❌ Lead não encontrado');
       return res.status(404).json({ error: 'Lead não encontrado' });
     }
@@ -239,35 +284,43 @@ export const updateLead = async (req: Request, res: Response) => {
       [id]
     );
 
+    if (!result.rows || result.rows.length === 0) {
+      throw new Error('Lead não encontrado após atualização');
+    }
+
     res.json(toCamelCase(result.rows[0]));
   } catch (error) {
     console.error('❌ Erro ao atualizar lead:', error);
-    console.error('❌ Detalhes do erro:', error);
-    res.status(500).json({ 
-      error: 'Erro ao atualizar lead',
-      details: (error as Error).message 
-    });
+    next(error);
   }
 };
 
-export const deleteLead = async (req: Request, res: Response) => {
+export const deleteLead = async (req: Request, res: Response, next: any) => {
   try {
     const { id } = req.params;
     const consultorId = req.user?.id;
+
+    if (!consultorId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID do lead é obrigatório' });
+    }
 
     const result = await query(
       'DELETE FROM leads WHERE id = ? AND consultor_id = ?',
       [id, consultorId]
     );
 
-    if ((result.rows as any).affectedRows === 0) {
+    if (!result.affectedRows || result.affectedRows === 0) {
       return res.status(404).json({ error: 'Lead não encontrado' });
     }
 
     res.json({ message: 'Lead deletado com sucesso' });
   } catch (error) {
-    console.error('Erro ao deletar lead:', error);
-    res.status(500).json({ error: 'Erro ao deletar lead' });
+    console.error('❌ Erro ao deletar lead:', error);
+    next(error);
   }
 };
 
@@ -346,13 +399,19 @@ export const removeTag = async (req: Request, res: Response) => {
   }
 };
 
-export const updateStatus = async (req: Request, res: Response) => {
+export const updateStatus = async (req: Request, res: Response, next: any) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
     const consultorId = req.user?.id;
 
-    console.log('🔄 Atualizando status do lead:', id, 'para:', status);
+    if (!consultorId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID do lead é obrigatório' });
+    }
 
     if (!status) {
       return res.status(400).json({ error: 'Status é obrigatório' });
@@ -361,8 +420,13 @@ export const updateStatus = async (req: Request, res: Response) => {
     // Verificar se o status é válido
     const statusValidos = ['novo', 'primeiro_contato', 'proposta_enviada', 'convertido', 'perdido'];
     if (!statusValidos.includes(status)) {
-      return res.status(400).json({ error: 'Status inválido' });
+      return res.status(400).json({ 
+        error: 'Status inválido',
+        statusValidos: statusValidos 
+      });
     }
+
+    console.log('🔄 Atualizando status do lead:', id, 'para:', status);
 
     // Verificar se o lead pertence ao consultor
     const checkResult = await query(
@@ -370,7 +434,7 @@ export const updateStatus = async (req: Request, res: Response) => {
       [id, consultorId]
     );
 
-    if (checkResult.rows.length === 0) {
+    if (!checkResult.rows || checkResult.rows.length === 0) {
       console.log('❌ Lead não encontrado');
       return res.status(404).json({ error: 'Lead não encontrado' });
     }
@@ -403,9 +467,14 @@ export const updateStatus = async (req: Request, res: Response) => {
 
     // Buscar lead atualizado
     const result = await query('SELECT * FROM leads WHERE id = ?', [id]);
+    
+    if (!result.rows || result.rows.length === 0) {
+      throw new Error('Lead não encontrado após atualização');
+    }
+    
     res.json(toCamelCase(result.rows[0]));
   } catch (error) {
     console.error('❌ Erro ao atualizar status:', error);
-    res.status(500).json({ error: 'Erro ao atualizar status' });
+    next(error);
   }
 };
