@@ -1,27 +1,10 @@
-# Dependencies
-node_modules/
-/.pnp
-.pnp.js
+# ==============================================
+# GITIGNORE - CRM PROTECAR
+# ==============================================
+# Arquivos e diretórios que não devem ser commitados no Git
 
-# Testing
-/coverage
+# ==============================================
+# AMBIENTE E CREDENCIAIS
+# ==============================================
+# Arquivos de ambiente com senhas e chaves
 
-# Next.js
-/.next/
-/out/
-
-# Production
-/build
-dist/
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts

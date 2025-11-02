@@ -1,0 +1,22 @@
+{
+  "components\\views\\ChatView.tsx -> @/lib/api": {
+    "id": "components\\views\\ChatView.tsx -> @/lib/api",
+    "files": []
+  },
+  "node_modules\\next\\dist\\client\\dev\\hot-reloader\\app\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts": {
+    "id": "node_modules\\next\\dist\\client\\dev\\hot-reloader\\app\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js.js"
+    ]
+  },
+  "store\\useProtecarStore.ts -> ./useCRMStore": {
+    "id": "store\\useProtecarStore.ts -> ./useCRMStore",
+    "files": [
+      "static/chunks/_app-pages-browser_store_useCRMStore_ts.js"
+    ]
+  },
+  "store\\useProtecarStore.ts -> @/lib/api": {
+    "id": "store\\useProtecarStore.ts -> @/lib/api",
+    "files": []
+  }
+}
