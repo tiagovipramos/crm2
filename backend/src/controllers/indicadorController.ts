@@ -483,14 +483,20 @@ export const criarIndicacao = async (req: IndicadorAuthRequest, res: Response) =
 
     // Registrar transação de bloqueio
     const transacaoId = uuidv4();
+    
+    // Buscar saldo atual antes da transação
+    const saldoAtualResult = await query(
+      'SELECT saldo_bloqueado FROM indicadores WHERE id = ?',
+      [indicadorId]
+    );
+    const saldoAnterior = parseFloat(saldoAtualResult.rows[0]?.saldo_bloqueado || 0);
+    const saldoNovo = saldoAnterior + 2.00;
+    
     await query(
       `INSERT INTO transacoes_indicador (
-        id, indicador_id, indicacao_id, tipo, valor, saldo_anterior, saldo_novo, descricao
-      ) SELECT 
-        ?, ?, ?, 'bloqueio', 2.00, saldo_bloqueado - 2.00, saldo_bloqueado,
-        'Comissão bloqueada aguardando resposta do lead'
-       FROM indicadores WHERE id = ?`,
-      [transacaoId, indicadorId, indicacao.id, indicadorId]
+        id, indicador_id, indicacao_id, tipo, valor, saldo_anterior, saldo_novo, descricao, data_transacao
+      ) VALUES (?, ?, ?, 'bloqueio', 2.00, ?, ?, 'Comissão bloqueada aguardando resposta do lead', NOW())`,
+      [transacaoId, indicadorId, indicacao.id, saldoAnterior, saldoNovo]
     );
 
     // 🎯 ALGORITMO ROUND ROBIN: Buscar apenas consultores com WhatsApp conectado
