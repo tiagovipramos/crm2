@@ -273,7 +273,7 @@ export default function IndicadorDashboardPage() {
                 />
               ) : (
                 <span className="text-white font-bold text-lg">
-                  {indicador.nome.charAt(0).toUpperCase()}
+                  {indicador.nome ? indicador.nome.charAt(0).toUpperCase() : '?'}
                 </span>
               )}
               <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -282,7 +282,7 @@ export default function IndicadorDashboardPage() {
             </button>
             <div>
               <h1 className="text-white font-bold text-lg leading-tight">
-                {indicador.nome.split(' ')[0]}
+                {indicador.nome ? indicador.nome.split(' ')[0] : 'Indicador'}
               </h1>
               <p className="text-purple-100 text-xs">Indicador VIP</p>
             </div>
@@ -620,14 +620,14 @@ export default function IndicadorDashboardPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {ind.nomeIndicado?.charAt(0)?.toUpperCase() || '?'}
+                    {ind.nomeIndicado && ind.nomeIndicado.length > 0 ? ind.nomeIndicado.charAt(0).toUpperCase() : '?'}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-800 truncate">
-                          {ind.nomeIndicado}
+                          {ind.nomeIndicado || 'Nome não informado'}
                         </p>
                         <p className="text-sm text-gray-500 flex items-center gap-1">
                           <Phone className="w-3 h-3" />
