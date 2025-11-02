@@ -44,6 +44,8 @@ export default function ChatView() {
   const [mostrarConfigNotificacoes, setMostrarConfigNotificacoes] = useState(false);
   const [mostrarBuscaChat, setMostrarBuscaChat] = useState(false);
   const [mostrarModalTarefa, setMostrarModalTarefa] = useState(false);
+  const [mostrarModalWhatsApp, setMostrarModalWhatsApp] = useState(false);
+  const [whatsappConectado, setWhatsappConectado] = useState(false);
   const [tituloTarefa, setTituloTarefa] = useState('');
   const [descricaoTarefa, setDescricaoTarefa] = useState('');
   const [dataTarefa, setDataTarefa] = useState('');
@@ -160,11 +162,24 @@ export default function ChatView() {
     }
   }, [mensagens, leadSelecionado, mostrarNotificacao]);
 
-  const handleEnviarMensagem = () => {
+  const handleEnviarMensagem = async () => {
     if (!mensagemTexto.trim() || !leadSelecionado) return;
 
-    enviarMensagem(leadSelecionado.id, mensagemTexto);
-    setMensagemTexto('');
+    try {
+      await enviarMensagem(leadSelecionado.id, mensagemTexto);
+      setMensagemTexto('');
+    } catch (error: any) {
+      console.error('❌ Erro ao enviar mensagem:', error);
+      
+      // Verificar se é erro de WhatsApp não conectado
+      if (error.message?.includes('WhatsApp não conectado') || 
+          error.response?.data?.error?.includes('WhatsApp não conectado')) {
+        setWhatsappConectado(false);
+        setMostrarModalWhatsApp(true);
+      } else {
+        alert(`Erro ao enviar mensagem: ${error.response?.data?.error || error.message || 'Erro desconhecido'}`);
+      }
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -572,6 +587,35 @@ export default function ChatView() {
       alert('Erro ao salvar nota. Tente novamente.');
     }
   };
+
+  // Verificar status do WhatsApp ao carregar
+  useEffect(() => {
+    const verificarStatusWhatsApp = async () => {
+      if (!consultorAtual?.id) return;
+      
+      try {
+        const { whatsappAPI } = await import('@/lib/api');
+        const status = await whatsappAPI.getStatus();
+        setWhatsappConectado(status.connected || false);
+        
+        if (status.connected) {
+          console.log('✅ WhatsApp conectado');
+        } else {
+          console.log('⚠️ WhatsApp desconectado');
+        }
+      } catch (error) {
+        console.error('❌ Erro ao verificar status do WhatsApp:', error);
+        setWhatsappConectado(false);
+      }
+    };
+
+    verificarStatusWhatsApp();
+    
+    // Verificar status a cada 30 segundos
+    const interval = setInterval(verificarStatusWhatsApp, 30000);
+    
+    return () => clearInterval(interval);
+  }, [consultorAtual?.id]);
 
   // Limpar campos quando mudar de lead
   useEffect(() => {
@@ -1274,6 +1318,29 @@ export default function ChatView() {
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Alerta de WhatsApp Desconectado */}
+          {!whatsappConectado && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-medium text-yellow-900">WhatsApp não conectado</p>
+                  <p className="text-sm text-yellow-700">Conecte seu WhatsApp para enviar e receber mensagens</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMostrarModalWhatsApp(true)}
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg transition"
+              >
+                Conectar WhatsApp
+              </button>
+            </div>
+          )}
+
           {/* Input de Mensagem / Gravação de Áudio */}
           <div className="bg-[#F0F2F5] px-4 py-3 flex items-end gap-2 relative">
             {gravandoAudio ? (
@@ -1437,15 +1504,26 @@ export default function ChatView() {
             {mensagemTexto.trim() ? (
               <button
                 onClick={handleEnviarMensagem}
-                className="p-3 bg-[#128C7E] hover:bg-[#075E54] rounded-full transition flex-shrink-0"
+                disabled={!whatsappConectado}
+                className={`p-3 rounded-full transition flex-shrink-0 ${
+                  whatsappConectado 
+                    ? 'bg-[#128C7E] hover:bg-[#075E54]' 
+                    : 'bg-gray-400 cursor-not-allowed'
+                }`}
+                title={whatsappConectado ? 'Enviar mensagem' : 'WhatsApp desconectado'}
               >
                 <Send className="w-5 h-5 text-white" />
               </button>
             ) : (
               <button
                 onClick={() => setGravandoAudio(true)}
-                className="p-3 bg-[#128C7E] hover:bg-[#075E54] rounded-full transition flex-shrink-0"
-                title="Gravar áudio"
+                disabled={!whatsappConectado}
+                className={`p-3 rounded-full transition flex-shrink-0 ${
+                  whatsappConectado 
+                    ? 'bg-[#128C7E] hover:bg-[#075E54]' 
+                    : 'bg-gray-400 cursor-not-allowed'
+                }`}
+                title={whatsappConectado ? 'Gravar áudio' : 'WhatsApp desconectado'}
               >
                 <Mic className="w-5 h-5 text-white" />
               </button>
@@ -1629,6 +1707,85 @@ export default function ChatView() {
             <p className="text-gray-600 max-w-md">
               Selecione uma conversa para começar a atender seus clientes
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Conectar WhatsApp */}
+      {mostrarModalWhatsApp && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#25D366] rounded-full flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Conectar WhatsApp</h3>
+                  <p className="text-sm text-gray-600">Necessário para enviar mensagens</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMostrarModalWhatsApp(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <div className="flex gap-3">
+                  <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-yellow-800">
+                    <p className="font-medium mb-1">WhatsApp não conectado</p>
+                    <p>Você precisa conectar seu WhatsApp para poder enviar e receber mensagens dos seus leads.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Como conectar:</h4>
+                  <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+                    <li>Clique no botão "Ir para Configurações" abaixo</li>
+                    <li>Na página de configurações, clique em "Conectar WhatsApp"</li>
+                    <li>Escaneie o QR Code com seu celular</li>
+                    <li>Aguarde a conexão ser estabelecida</li>
+                  </ol>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-sm text-gray-700">
+                    <strong>Dica:</strong> Você pode encontrar a opção de conectar WhatsApp no menu de configurações no canto superior direito da tela principal do CRM.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setMostrarModalWhatsApp(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={() => {
+                  setMostrarModalWhatsApp(false);
+                  // Redirecionar para configurações
+                  setViewMode('configuracoes');
+                }}
+                className="flex-1 px-4 py-2 bg-[#25D366] text-white rounded-lg hover:bg-[#1da851] transition font-medium"
+              >
+                Ir para Configurações
+              </button>
+            </div>
           </div>
         </div>
       )}
