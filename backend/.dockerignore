@@ -68,7 +68,7 @@ LICENSE
 .env
 .env.local
 .env.*.local
-nodemon.json
+# nodemon.json - NECESSÁRIO para desenvolvimento
 
 # Scripts Windows (não necessários no container Linux)
 *.bat
