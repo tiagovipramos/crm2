@@ -35,8 +35,8 @@ services:
       - mysql_data:/var/lib/mysql
       # Configuração customizada
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf:ro
-      # Migrations (para fácil execução)
-      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+      # Migrations (comentado temporariamente para permitir inicialização)
+      # - ./backend/migrations:/docker-entrypoint-initdb.d:ro
     networks:
       - protecar-network
     healthcheck:
