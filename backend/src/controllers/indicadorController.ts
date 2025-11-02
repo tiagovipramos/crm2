@@ -3,6 +3,7 @@ import { IndicadorAuthRequest } from '../middleware/authIndicador';
 import { generateTokenIndicador } from '../middleware/authIndicador';
 import { query } from '../config/db-helper';
 import bcrypt from 'bcryptjs';
+import { v4 as uuidv4 } from 'uuid';
 import { whatsappValidationService } from '../services/whatsappValidationService';
 import { whatsappService } from '../services/whatsappService';
 
@@ -442,7 +443,7 @@ export const criarIndicacao = async (req: IndicadorAuthRequest, res: Response) =
     // Verificar se o telefone já foi indicado por QUALQUER indicador no sistema
     const indicacaoExistente = await query(
       `SELECT id, indicador_id FROM indicacoes 
-       WHERE telefone_indicado = ?`,
+       WHERE telefone = ?`,
       [validacao.telefone]
     );
 
@@ -481,14 +482,15 @@ export const criarIndicacao = async (req: IndicadorAuthRequest, res: Response) =
     );
 
     // Registrar transação de bloqueio
+    const transacaoId = uuidv4();
     await query(
       `INSERT INTO transacoes_indicador (
-        indicador_id, indicacao_id, tipo, valor, saldo_anterior, saldo_novo, descricao
+        id, indicador_id, indicacao_id, tipo, valor, saldo_anterior, saldo_novo, descricao
       ) SELECT 
-        ?, ?, 'bloqueio', 2.00, saldo_bloqueado - 2.00, saldo_bloqueado,
+        ?, ?, ?, 'bloqueio', 2.00, saldo_bloqueado - 2.00, saldo_bloqueado,
         'Comissão bloqueada aguardando resposta do lead'
        FROM indicadores WHERE id = ?`,
-      [indicadorId, indicacao.id, indicadorId]
+      [transacaoId, indicadorId, indicacao.id, indicadorId]
     );
 
     // 🎯 ALGORITMO ROUND ROBIN: Buscar apenas consultores com WhatsApp conectado
