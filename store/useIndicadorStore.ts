@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import axios from 'axios';
 import type { Indicador, DashboardIndicador, Indicacao, TransacaoIndicador } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://185.217.125.72:3001/api';
 
 interface LootBoxStatus {
   leadsParaProximaCaixa: number;

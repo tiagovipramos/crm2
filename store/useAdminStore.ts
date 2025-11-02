@@ -27,7 +27,7 @@ import {
   getAllAdmins,
 } from '@/data/mockAdminData';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://185.217.125.72:3001/api';
 
 interface AdminState {
   // Autenticação

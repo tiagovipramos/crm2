@@ -26,7 +26,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://185.217.125.72:3000',
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['*']
@@ -41,7 +41,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://185.217.125.72:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -54,7 +54,7 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 // process.cwd() já aponta para a pasta backend quando o servidor está rodando
 const uploadsPath = path.join(process.cwd(), 'uploads');
 app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://185.217.125.72:3000');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
   res.setHeader('Access-Control-Allow-Credentials', 'true');

@@ -17,7 +17,7 @@ export function useSocket() {
     }
 
     // Conectar ao Socket.IO
-    const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001';
+    const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'http://185.217.125.72:3001';
     const socket = io(WS_URL, {
       transports: ['websocket', 'polling'],
     });

@@ -56,7 +56,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
         console.log('✅ Token decodificado:', payload);
         
         // Buscar dados completos do usuário
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://185.217.125.72:3001';
         fetch(`${API_URL}/auth/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })

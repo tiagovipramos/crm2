@@ -53,7 +53,7 @@ export default function ChatVisaoGeralView() {
       console.log('✅ Token do admin encontrado!');
 
       // Solicitar token temporário
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://185.217.125.72:3001';
       const response = await fetch(`${API_URL}/admin/vendedores/${vendedorId}/gerar-token`, {
         method: 'POST',
         headers: {

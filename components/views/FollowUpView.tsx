@@ -16,7 +16,7 @@ import type {
 } from '@/types';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://185.217.125.72:3001';
 
 // Modal para criar/editar sequência
 function SequenciaModal({ 

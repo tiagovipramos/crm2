@@ -12,7 +12,7 @@ import { mensagensAPI } from '@/lib/api';
 
 export default function ChatView() {
   // URL base para arquivos de mídia (remover /api do final)
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace('/api', '');
+  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://185.217.125.72:3001/api').replace('/api', '');
 
   const {
     getLeadsDoConsultor,
