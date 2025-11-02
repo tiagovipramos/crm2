@@ -210,7 +210,7 @@ export default function IndicadorDashboardPage() {
   };
 
   const indicacoesFiltradas = dashboard?.indicacoesRecentes.filter((ind) => {
-    if (buscaNome && !ind.nomeIndicado.toLowerCase().includes(buscaNome.toLowerCase())) {
+    if (buscaNome && ind.nomeIndicado && !ind.nomeIndicado.toLowerCase().includes(buscaNome.toLowerCase())) {
       return false;
     }
 
@@ -620,7 +620,7 @@ export default function IndicadorDashboardPage() {
               >
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {ind.nomeIndicado.charAt(0).toUpperCase()}
+                    {ind.nomeIndicado?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   
                   <div className="flex-1 min-w-0">
